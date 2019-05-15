@@ -1,0 +1,126 @@
+---
+title: "Creating a Transect Line"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, results="hide", message=FALSE, cache=TRUE, fig.align="center")
+```
+
+The goal is to set up a transect line with evenly spaced points defined by latitude and longitude. We will use this transect to download ocean remote-sensing variables at those locations.
+
+First we will set up our two points.
+
+```{r}
+library(data.table)
+df <- data.frame(
+  Latitude=c(9.9413972, 9.2),
+  Longitude=c(76.2, 74.5)
+  )
+data.table::setDT(df)
+```
+
+Here is where they are on a map.
+
+```{r}
+library(rworldmap)
+newmap <- rworldmap::getMap(resolution = "low")
+plot(newmap, xlim = c(75,76), ylim = c(8,13), asp = 1)
+points(df$Longitude, df$Latitude, col = "red", cex = .6)
+```
+
+Next we will interpolate points every 10km on this line.
+```{r}
+dist.between = 10000 #in meters
+
+library(geotools)
+library(geosphere)    # for distHaversine
+get.dist <- function(lon, lat) geosphere::distHaversine(tail(cbind(lon,lat),-1), head(cbind(lon,lat),-1))
+# The := function is in data.table
+df[,dist:=c(0,cumsum(get.dist(Longitude,Latitude)))]
+
+interp.dist <- function(var,dist) approx(dist,var,xout=seq(min(dist),max(dist),by=dist.between))$y
+result <- setDT(df)[,lapply(.SD,interp.dist,dist=dist), 
+                    .SDcols=c("Latitude","Longitude","dist")]
+```
+
+Now we can plot these points.
+
+```{r}
+# plot the result
+newmap <- rworldmap::getMap(resolution = "low")
+plot(newmap, xlim = c(74,76), ylim = c(8,13))
+points(df$Longitude, df$Latitude, col = "red", cex = .6)
+points(Latitude~Longitude,result, col="blue")
+axis(side=1)
+axis(side=2)
+```
+
+We can plot with `ggplot()` also.
+
+```{r}
+library(ggplot2)
+india <- rworldmap::getMap(resolution = "low")
+
+(with_india <- ggplot() +
+	geom_path(data = india, 
+		aes(x = long, y = lat, group = group),
+		fill = NA, colour = "black") + 
+	geom_point(data = result, 
+		aes(x = Longitude, y = Latitude)) +
+  xlim(74,80) +
+  ylim(7,13) +
+	coord_quickmap() +  # Prevents stretching when resizing
+	theme_classic() +  # Remove ugly grey background
+	xlab("Longitude") +
+	ylab("Latitude"))
+```
+
+That's really ugly so let's improve it.
+
+Download bathymetry data from NOAA.
+
+```{r}
+library(marmap)#if it is not in your package list install it simply by marmap on the dialog box
+xlims <- c(73,80)
+ylims <- c(6,15)
+bathydata<- getNOAA.bathy(xlims[1], xlims[2], ylims[1], ylims[2])#Be sure the locations are same
+```
+
+Plot the data with our transect line. You have to tweak the plot region otherwise you will have white space around your plot. It has to do with setting `asp=1` (default) to not distort your plot. You can change to `asp=NA` once your plot size is close to `asp=1`.
+
+```{r fig.width=5.2, fig.height=7}
+# code adapted from 
+# https://pepprbook.com/2018/02/17/mapping-in-r/
+#Load the bathymetry data from NOAA using marmap
+library(rworldmap)
+library(rworldxtra)
+library(maps)
+#Make some colour combinations.Here I took blues and greys
+
+blues <- c("lightsteelblue4", "lightsteelblue3",
+ "lightsteelblue2", "lightsteelblue1")
+greys <- c(grey(0.6), grey(0.93), grey(0.99))
+#Now plot the data 'bathydata' with the colours we created
+#par(mar=c(5, 10, 5, 10) + 0.1)
+plot(bathydata, image = TRUE, land = TRUE, lwd = 0.03,
+ bpal = list(c(0, max(bathydata), greys),
+ c(min(bathydata), 0, blues)), asp=1)
+#make thickened contour lines
+plot(bathydata, n = 4, lwd = 0.4, add = TRUE)
+#Add the map overlay
+map("world","India",col = "grey",fill = TRUE,add=TRUE,xlim=xlims,ylim=ylims, lwd=2)
+#Add your sampling points(pch=25 makes it inverted triangles)
+points(result$Longitude,result$Latitude,pch=16,col="black",cex=.5)
+box(lty="solid", lwd=2)
+```
+
+We can also make the plot with `ggplot()`.
+
+```{r}
+autoplot(bathydata, geom=c("r", "c")) + 
+  scale_fill_etopo() +
+  ylim(7,13) +
+  xlim(73,79)+
+  geom_point(aes(x=Longitude, y=Latitude), data=result, alpha=1)
+```
