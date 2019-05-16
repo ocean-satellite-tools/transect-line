@@ -255,12 +255,12 @@ Now plot strips for each 8-day window. We will set the margin to leave some room
 
 
 ```{r fig.height=4, fig.width=7}
-par(mar=c(8,2,2,2))
+par(mar=c(8,5,2,2))
 wid=8
 xaxs <- c(thedate, max(thedate)+wid)
 n <- length(xaxs)
 plot(xaxs, rep(0,n), 
-     ylim=c(0,max(alldata$km)), type= "n", xlab = "", ylab = "Distance from Coast (km)")
+     ylim=c(0,max(alldata$km)), type= "n", xlab = "", ylab = "Distance from coast (km)")
 for(j in 1:length(thedate)){
   for(i in 1:dim(alldata)[1]){
   rect(xaxs[j], alldata$km[i], xaxs[j+1], alldata$km[i+1], col = colmat[i,j],
