@@ -7,7 +7,7 @@ This creates a series of equally spaced points between two points and then creat
 
 The example of a colorbar against time. This is chlorophyl on a transect away from Kochi. y-axis is kilometers from the coast. It is not very interesting since there are so many missing values.
 
-![Chl off SW Coast of India](inst/doc/image/Chl2010.png)
+![Chl off SW Coast of India](/inst/doc/images/Chl2010.png)
 
 
 Examples
