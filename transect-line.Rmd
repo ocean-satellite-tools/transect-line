@@ -4,7 +4,7 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, warning=FALSE, results="hide", message=FALSE, cache=TRUE, fig.align="center")
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, results="hide", message=FALSE, fig.align="center")
 ```
 
 The goal is to set up a transect line with evenly spaced points defined by latitude and longitude. We will use this transect to download ocean remote-sensing variables at those locations.
@@ -15,7 +15,7 @@ First we will set up our two points.
 library(data.table)
 df <- data.frame(
   Latitude=c(9.9413972, 9.2),
-  Longitude=c(76.2, 74.5)
+  Longitude=c(76.2, 74)
   )
 data.table::setDT(df)
 ```
